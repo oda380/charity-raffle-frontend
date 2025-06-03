@@ -151,7 +151,7 @@ export default function MintSection() {
         <p className="text-sm text-text-dark/80 dark:text-dark-text/80">
           Each ticket costs{" "}
           <span className="font-semibold text-indigo-600 dark:text-indigo-400">
-            {(validNumericMintPrice / 10_000_000).toFixed(2)} USDC
+            {(validNumericMintPrice / 1_000_000).toFixed(2)} USDC
           </span>
         </p>
       )}
