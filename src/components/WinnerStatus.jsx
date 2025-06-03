@@ -1,5 +1,6 @@
-import { useAccount } from "wagmi";
 import { useEffect, useState } from "react";
+import { useAccount } from "wagmi";
+import InfoCard from "./InfoCard";
 
 export default function WinnerStatus() {
   const { address, isConnected } = useAccount();
@@ -9,10 +10,10 @@ export default function WinnerStatus() {
   useEffect(() => {
     if (!isConnected || !address) return;
 
-    const checkWinner = async () => {
+    const check = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`https://charity-raffle-relayer.onrender.com/isWinner/${address}`);
+        const res = await fetch(`https://https://charity-raffle-relayer.onrender.com/isWinner/${address}`);
         const data = await res.json();
         setIsWinner(data.isWinner);
       } catch (err) {
@@ -23,20 +24,28 @@ export default function WinnerStatus() {
       }
     };
 
-    checkWinner();
+    check();
   }, [address, isConnected]);
 
   if (!isConnected) return null;
 
   return (
-    <div className="bg-white p-4 rounded shadow text-sm text-center">
-      {loading && <p>Checking winner status...</p>}
-      {isWinner === true && (
-        <p className="text-green-600 font-bold text-lg">🎉 You are a winner!</p>
+    <InfoCard title="🎉 Winner Status">
+      {loading ? (
+        <p className="text-sm text-gray-500 dark:text-gray-400">Checking winner status...</p>
+      ) : isWinner === true ? (
+        <p className="text-xl font-fun font-bold text-green-600 dark:text-green-400 animate-pulse">
+          🎉 You're a winner!
+        </p>
+      ) : isWinner === false ? (
+        <p className="text-sm text-purple-600 dark:text-purple-300 font-medium">
+          Not a winner (yet) — fingers crossed!
+        </p>
+      ) : (
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+         Wait till the winners are selected!
+        </p>
       )}
-      {isWinner === false && (
-        <p className="text-gray-600">Not a winner (yet) — good luck!</p>
-      )}
-    </div>
+    </InfoCard>
   );
 }

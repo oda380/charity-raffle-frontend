@@ -1,14 +1,15 @@
 import { useAccount, useContractRead } from "wagmi";
-import ERC20ABI from "../abis/ERC20ABI.json";
+import USDC from "../abis/USDC.json";
+import InfoCard from "./InfoCard";
 
-const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"; // Base USDC
+const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 
 export default function TokenBalance() {
   const { address, isConnected } = useAccount();
 
   const { data: balance, isLoading } = useContractRead({
     address: USDC_ADDRESS,
-    abi: ERC20ABI,
+    abi: USDC,
     functionName: "balanceOf",
     args: [address],
     enabled: !!address,
@@ -18,13 +19,14 @@ export default function TokenBalance() {
   if (!isConnected) return null;
 
   return (
-    <div className="text-sm text-center text-gray-800">
-      {isLoading && "Fetching USDC balance..."}
-      {balance && (
-        <p>
-          💰 Balance: {(Number(balance) / 1_000_000).toFixed(2)} USDC
+    <InfoCard title="💰 Your USDC Balance">
+      {isLoading ? (
+        <p className="text-sm text-gray-500 dark:text-gray-400">Fetching balance...</p>
+      ) : (
+        <p className="text-xl font-bold text-indigo-700 dark:text-indigo-300">
+          {(Number(balance || 0) / 1_000_000).toFixed(2)} USDC
         </p>
       )}
-    </div>
+    </InfoCard>
   );
 }

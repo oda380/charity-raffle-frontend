@@ -8,11 +8,9 @@ import {
   http,
 } from "wagmi";
 import { base } from "wagmi/chains";
-import "@rainbow-me/rainbowkit/styles.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const chains = [base];
-const publicClient = http("https://mainnet.base.org");
 
 const { connectors } = getDefaultWallets({
   appName: "Charity Raffle",
@@ -21,10 +19,12 @@ const { connectors } = getDefaultWallets({
 });
 
 export const config = createConfig({
-  connectors,
-  publicClient,
-  chains,
   autoConnect: true,
+  connectors,
+  chains,
+  transports: {
+    [base.id]: http("https://mainnet.base.org"), // ✅ FIXED: mapped to 8453
+  },
 });
 
 const queryClient = new QueryClient();
