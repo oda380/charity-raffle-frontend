@@ -1,24 +1,21 @@
 // src/components/WinnerStatus.jsx
 import { useEffect, useState } from "react";
-import { useAccount } from "wagmi";
-import InfoCard from "./InfoCard"; // Assuming this path is correct
+import { useAccount, useContractRead, useReadContracts } from "wagmi";
+import InfoCard from "./InfoCard";
+import CharityRaffleABI from "../abis/CharityRaffleABI.json";
 
-// Ensure your relayer URL is correct
 const RELAYER_BASE_URL = "https://charity-raffle-relayer.onrender.com";
+const CONTRACT_ADDRESS = "0xed81C5F9e322D1005a28393c5D93499ee2ff4e55";
 
 export default function WinnerStatus() {
   const { address, isConnected } = useAccount();
-  // isWinner state:
-  // null: status unknown, pending, or raffle not yet concluded
-  // true: user is a winner (and raffle concluded)
-  // false: user is not a winner (and raffle concluded)
   const [isWinner, setIsWinner] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [fetchError, setFetchError] = useState(null);
 
   useEffect(() => {
     if (!isConnected || !address) {
-      setIsWinner(null); // Reset status if disconnected or no address
+      setIsWinner(null);
       setFetchError(null);
       setIsLoading(false);
       return;
@@ -27,12 +24,9 @@ export default function WinnerStatus() {
     const checkWinnerStatus = async () => {
       setIsLoading(true);
       setFetchError(null);
-      setIsWinner(null); // Default to pending/unknown while fetching
+      setIsWinner(null);
 
       try {
-        // IMPORTANT ASSUMPTION:
-        // API endpoint /isWinner/:address now returns:
-        // { isWinner: boolean, winnersSelected: boolean }
         const res = await fetch(`${RELAYER_BASE_URL}/isWinner/${address}`);
         if (!res.ok) {
           const errorData = await res.json().catch(() => ({}));
@@ -41,33 +35,18 @@ export default function WinnerStatus() {
         const data = await res.json();
 
         if (data.winnersSelected === undefined) {
-          console.warn("API response is missing 'winnersSelected' field. Displaying potentially inaccurate status.");
-          // Fallback or specific error handling if the API isn't updated as expected
-          // For now, we'll proceed assuming it might be an older API version
-          // and rely only on data.isWinner if winnersSelected is missing.
-          if (data.isWinner === true) {
-            setIsWinner(true);
-          } else if (data.isWinner === false) {
-            setIsWinner(false);
-          } else {
-            setIsWinner(null); // Treat as pending if isWinner is also ambiguous
-          }
+          if (data.isWinner === true) setIsWinner(true);
+          else if (data.isWinner === false) setIsWinner(false);
+          else setIsWinner(null);
         } else if (data.winnersSelected === false) {
-          // If winners have NOT been selected by the contract, the raffle is pending.
-          setIsWinner(null); // This will trigger the "Winner selection is pending..." message
+          setIsWinner(null);
         } else {
-          // Winners HAVE been selected (data.winnersSelected is true).
-          // Now check if the current user is one of them.
-          if (data.isWinner === true) {
-            setIsWinner(true); // User is a winner
-          } else {
-            setIsWinner(false); // User is not a winner (and raffle has concluded)
-          }
+          setIsWinner(data.isWinner === true);
         }
       } catch (err) {
         console.error("Winner status check failed:", err);
         setFetchError(err.message || "Could not check winner status.");
-        setIsWinner(null); // On error, revert to a pending-like state for the message
+        setIsWinner(null);
       } finally {
         setIsLoading(false);
       }
@@ -76,11 +55,31 @@ export default function WinnerStatus() {
     checkWinnerStatus();
   }, [address, isConnected]);
 
-  if (!isConnected) {
-    return null;
-  }
+  const { data: balanceOf } = useContractRead({
+    address: CONTRACT_ADDRESS,
+    abi: CharityRaffleABI,
+    functionName: "balanceOf",
+    args: [address],
+    enabled: !!address,
+  });
+
+  const tokenIndexes = Array.from({ length: Number(balanceOf || 0) }, (_, i) => i);
+
+  const ownedTokenReads = tokenIndexes.map((i) => ({
+    address: CONTRACT_ADDRESS,
+    abi: CharityRaffleABI,
+    functionName: "tokenOfOwnerByIndex",
+    args: [address, BigInt(i)],
+  }));
+
+  const { data: tokenResults } = useReadContracts({
+    contracts: ownedTokenReads,
+    query: { enabled: tokenIndexes.length > 0 },
+  });
 
   let content;
+
+  if (!isConnected) return null;
 
   if (isLoading) {
     content = (
@@ -107,12 +106,6 @@ export default function WinnerStatus() {
       </p>
     );
   } else {
-    // isWinner is null. This now correctly means:
-    // 1. Initial state.
-    // 2. User not connected / no address.
-    // 3. Loading state (though 'Checking status...' will show).
-    // 4. Fetch error occurred.
-    // 5. Crucially: API indicated that winnersSelected is false.
     content = (
       <p className="text-sm text-text-dark/80 dark:text-dark-text/80">
         Winner selection is pending. Please check back later.
@@ -122,8 +115,27 @@ export default function WinnerStatus() {
 
   return (
     <InfoCard title="🌟 Your Raffle Status">
-      <div className="flex items-center justify-center pt-1 min-h-[40px]">
+      <div className="flex flex-col items-center justify-center gap-2 pt-1">
         {content}
+
+        {tokenResults && tokenResults.length > 0 && (
+          <div className="pt-4 space-y-2 text-sm text-text-dark/80 dark:text-dark-text/80">
+            <p className="font-medium">🎫 You own the following ticket(s):</p>
+            <div className="flex flex-wrap justify-center gap-2">
+              {tokenResults.map((res, i) => {
+                const tokenId = res?.result?.toString();
+                return tokenId ? (
+                  <div
+                    key={i}
+                    className="px-3 py-1 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-700/30 dark:text-indigo-200 text-xs font-semibold"
+                  >
+                    Ticket #{tokenId}
+                  </div>
+                ) : null;
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </InfoCard>
   );
