@@ -1,42 +1,102 @@
+/* App.css */
+
+:root {
+  /* Pastel Palette */
+  --pastel-blue: #A7C7E7;
+  --pastel-lavender: #E6E6FA;
+  --pastel-purple: #C3B1E1;
+  --warm-peach-accent: #FFDAB9;
+
+  /* Text & Backgrounds */
+  --text-dark: #4A4A6A;
+  --text-light: #FFFFFF;
+  --bg-main: var(--pastel-lavender);
+  --bg-content: var(--bg-off-white);
+  --bg-off-white: #F8F8FF;
+
+  /* Borders & Shadows */
+  --border-radius-main: 8px;
+  --border-radius-large: 12px;
+  --shadow-soft: 0 4px 12px rgba(74, 74, 106, 0.08);
+  --shadow-medium: 0 6px 16px rgba(74, 74, 106, 0.1);
+
+  /* Typography */
+  --font-primary: 'Nunito', sans-serif;
+  --font-headings: 'Poppins', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font-primary);
+  color: var(--text-dark);
+  background-color: var(--bg-main);
+  line-height: 1.6;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-headings);
+  margin-bottom: 0.75em;
+  line-height: 1.3;
+}
+
 #root {
   max-width: 1280px;
+  width: 100%;
   margin: 0 auto;
   padding: 2rem;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Center content blocks like cards */
+}
+
+/* Remove or replace .logo, @keyframes logo-spin, etc. */
+/* .logo { ... } */
+/* ... */
+
+.card {
+  background-color: var(--bg-content);
+  border-radius: var(--border-radius-large);
+  padding: 1.5em 2em;
+  box-shadow: var(--shadow-soft);
+  margin-bottom: 1.5rem;
+  width: 100%;
+  max-width: 700px; /* Example max-width for content cards */
+  text-align: left; /* Default for card content */
+}
+
+/* Remove or repurpose .read-the-docs */
+/* .read-the-docs { ... } */
+
+/* Add other global styles or utilities here */
+.button-primary {
+  background-color: var(--pastel-blue);
+  color: var(--text-dark);
+  padding: 12px 24px;
+  border: none;
+  border-radius: var(--border-radius-main);
+  font-weight: bold;
+  font-family: var(--font-headings); /* Use heading font for buttons for impact */
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  text-decoration: none; /* For <button> or <a> styled as button */
+  display: inline-block; /* For <a> styled as button */
   text-align: center;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.button-primary:hover {
+  background-color: #89b6e0; /* Darken pastel blue slightly */
+  transform: translateY(-1px);
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.button-primary:active {
+  transform: translateY(0px);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
-}
+/* ... (add other styles for .button-secondary, inputs, etc. as discussed) */

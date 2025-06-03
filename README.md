@@ -6,7 +6,7 @@
 ````markdown
 # 🎟️ Charity Raffle dApp (Frontend)
 
-This is the frontend application for the **Yolo Summer Day Charity Raffle** built on [Base](https://base.org). Users can connect their wallet, mint up to 3 NFT raffle tickets, and potentially win real-world prizes — with proceeds split between winners and charity.
+This is the frontend application for the **Yolo Summer Event Charity Raffle** built on [Base](https://base.org). Users can connect their wallet, mint up to 3 NFT raffle tickets, and potentially win real-world prizes — with proceeds split between winners and charity.
 
 ---
 

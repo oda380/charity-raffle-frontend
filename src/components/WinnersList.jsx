@@ -1,88 +1,147 @@
+// src/components/WinnersList.jsx
 import { useEffect, useState } from "react";
 import { useReadContracts } from "wagmi";
-import CharityRaffleABI from "../abis/CharityRaffleABI.json";
+import CharityRaffleABI from "../abis/CharityRaffleABI.json"; // Assuming this path is correct
+
+const RAFFLE_CONTRACT_ADDRESS = "0xed81C5F9e322D1005a28393c5D93499ee2ff4e55"; // Make sure this is correct
+// Ensure your relayer URL is correct
+const RELAYER_WINNERS_URL = "https://charity-raffle-relayer.onrender.com/winners";
 
 export default function WinnersList() {
-  const [winners, setWinners] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [winningTicketIds, setWinningTicketIds] = useState([]);
+  const [isLoadingWinners, setIsLoadingWinners] = useState(true);
+  const [fetchError, setFetchError] = useState(null);
 
-  const ownerQueries = winners.map((id) => ({
-  address: "0xed81C5F9e322D1005a28393c5D93499ee2ff4e55",
-  abi: CharityRaffleABI,
-  functionName: "ownerOf",
-  args: [BigInt(id)],
-    }));
-
-    const { data: ownerResults, isLoading: ownersLoading } = useReadContracts({
-      contracts: ownerQueries,
-      query: { enabled: winners.length > 0 },
-    });
-
+  // Fetch the list of winning ticket IDs from the relayer
   useEffect(() => {
-    const fetchWinners = async () => {
+    const fetchWinningTicketIds = async () => {
+      setIsLoadingWinners(true);
+      setFetchError(null);
       try {
-        const res = await fetch("https://https://charity-raffle-relayer.onrender.com/winners");
+        const res = await fetch(RELAYER_WINNERS_URL);
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({})); // Try to get error message
+          throw new Error(errorData.error || `Failed to fetch winners: ${res.statusText}`);
+        }
         const data = await res.json();
-        setWinners(data.winners || []);
+        setWinningTicketIds(Array.isArray(data.winners) ? data.winners.map(id => BigInt(id)) : []);
       } catch (err) {
-        console.error("Failed to load winners:", err);
-        setError(true);
+        console.error("Failed to load winning ticket IDs:", err);
+        setFetchError(err.message || "Could not load winners list.");
       } finally {
-        setLoading(false);
+        setIsLoadingWinners(false);
       }
     };
 
-    fetchWinners();
+    fetchWinningTicketIds();
   }, []);
 
-  return (
-    <div className="bg-white/80 dark:bg-indigo-950/80 backdrop-blur-sm rounded-2xl p-4 shadow-md border border-white/30 dark:border-indigo-800 text-center space-y-4">
-      <h3 className="text-lg font-fun text-purple-600 dark:text-purple-300">
-        🏆 Winning Ticket IDs
-      </h3>
+  // Prepare queries to fetch ownerOf for each winning ticket ID
+  const ownerQueries = winningTicketIds.map((id) => ({
+    address: RAFFLE_CONTRACT_ADDRESS,
+    abi: CharityRaffleABI,
+    functionName: "ownerOf",
+    args: [id], // id should already be BigInt from the fetch processing
+  }));
 
-      {loading && <p className="text-sm text-gray-500">Loading winners...</p>}
-      {loading ? (
-        <p className="text-sm text-gray-500 dark:text-gray-400">Loading winners...</p>
-      ) : winners.length === 0 ? (
-        <p className="text-sm text-gray-600 dark:text-gray-400">No winners selected yet</p>
-      ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 text-sm">
-          {winners.map((id) => (
-            <div
-              key={id}
-              className="bg-indigo-100 text-indigo-700 dark:bg-indigo-700/50 dark:text-indigo-100 px-3 py-1 rounded-xl shadow-sm font-semibold font-mono"
-            >
-              #{id}
-            </div>
-          ))}
-        </div>
-      )}
+  const {
+    data: ownerResults, // Array of results, each with { result: '0xAddress', status: 'success' } or error
+    isLoading: isLoadingOwners,
+    isError: isOwnerReadError, // True if any of the multicalls fail
+    error: ownerReadErrorData, // Contains error details if isOwnerReadError is true
+  } = useReadContracts({
+    contracts: ownerQueries,
+    // Only enable if there are winning ticket IDs to query
+    query: { enabled: winningTicketIds.length > 0 && !isLoadingWinners && !fetchError },
+  });
 
 
-      {winners.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-          {winners.map((id, i) => {
-            const owner = ownerResults?.[i]?.result;
+  // Content to display based on loading and error states
+  let content;
+
+  if (isLoadingWinners) {
+    content = (
+      <p className="text-sm text-text-dark/70 dark:text-dark-text/70 animate-pulse text-center">
+        Loading winning tickets...
+      </p>
+    );
+  } else if (fetchError) {
+    content = (
+      <div className="text-sm text-center text-red-700 bg-red-100 dark:text-red-300 dark:bg-red-800/40 border border-red-300 dark:border-red-600 p-3 rounded-lg">
+        ❌ {fetchError}
+      </div>
+    );
+  } else if (winningTicketIds.length === 0) {
+    content = (
+      <p className="text-sm text-text-dark/80 dark:text-dark-text/80 text-center">
+        No winners have been selected yet.
+      </p>
+    );
+  } else {
+    content = (
+      <div className="space-y-3">
+        {isOwnerReadError && (
+          <p className="text-xs text-red-600 dark:text-red-400 text-center mb-2">
+            Note: Could not fetch all owner details. {ownerReadErrorData?.shortMessage || ownerReadErrorData?.message}
+          </p>
+        )}
+        <ul className="space-y-3 sm:space-y-0 sm:grid sm:grid-cols-1 md:grid-cols-2 sm:gap-3">
+          {winningTicketIds.map((ticketId, index) => {
+            const ownerResult = ownerResults?.[index];
+            const ownerAddress = ownerResult?.status === 'success' ? String(ownerResult.result) : null;
+            const ownerFetchFailed = ownerResult?.status === 'failure';
+
             return (
-              <div
-                key={id}
-                className="bg-indigo-100 text-indigo-700 dark:bg-indigo-700/50 dark:text-indigo-100 px-4 py-3 rounded-xl shadow-sm font-mono text-left"
+              <li
+                key={String(ticketId)}
+                className="bg-indigo-100/70 dark:bg-indigo-900/50 p-3 rounded-lg shadow-sm text-left transition-all hover:shadow-md"
               >
-                <div className="font-semibold">🎟 Ticket #{id}</div>
-                {owner ? (
-                  <div className="text-xs mt-1 text-gray-600 dark:text-gray-300">
-                    🧑 {owner.slice(0, 6)}...{owner.slice(-4)}
-                  </div>
-                ) : (
-                  <div className="text-xs text-gray-500">Loading owner...</div>
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold font-mono text-indigo-700 dark:text-indigo-300">
+                    🎟️ Ticket #{String(ticketId)}
+                  </span>
+                  {/* Optional: Add a small visual cue for successful owner fetch */}
+                </div>
+                {isLoadingOwners && !ownerAddress && !ownerFetchFailed && (
+                  <p className="text-xs text-text-dark/60 dark:text-dark-text/60 mt-1 animate-pulse">
+                    Fetching owner...
+                  </p>
                 )}
-              </div>
+                {ownerAddress && (
+                  <p className="text-xs text-text-dark/80 dark:text-dark-text/70 mt-1 truncate">
+                    🧑 Owner:{" "}
+                    <a
+                      href={`https://basescan.org/address/${ownerAddress}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:underline text-indigo-600 dark:text-indigo-400"
+                    >
+                      {ownerAddress.slice(0, 6)}...{ownerAddress.slice(-4)}
+                    </a>
+                  </p>
+                )}
+                {ownerFetchFailed && !isLoadingOwners && (
+                   <p className="text-xs text-red-500 dark:text-red-400 mt-1">
+                    Could not fetch owner.
+                  </p>
+                )}
+              </li>
             );
           })}
-        </div>
-      )}
+        </ul>
+      </div>
+    );
+  }
+
+  // This component assumes it's placed within a parent <Card> that provides the main title
+  // e.g., <Card title="🏆 Raffle Winners">
+  return (
+    <div className="w-full space-y-3">
+       {/* Optional: Sub-heading specific to this list if the parent Card title is more general */}
+      <h4 className="text-md font-headings text-purple-600 dark:text-purple-400 text-center">
+        Winning Tickets & Owners
+      </h4>
+      {content}
     </div>
   );
 }

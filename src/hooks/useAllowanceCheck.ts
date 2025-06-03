@@ -1,6 +1,6 @@
 import { useReadContract } from "wagmi";
 import { useEffect, useState } from "react";
-import USDC_ABI from "../abis/USDC.json";
+import USDC_ABI from "../abis/USDC_ABI.json";
 
 const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 const CONTRACT_ADDRESS = "0xed81C5F9e322D1005a28393c5D93499ee2ff4e55";

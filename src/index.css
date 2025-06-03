@@ -1,3 +1,10 @@
+/* styles/index.css or similar - imported in main.jsx */
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&family=Poppins:wght@500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+body {
+  @apply font-primary text-text-dark dark:text-dark-text; /* Set global font */
+}
