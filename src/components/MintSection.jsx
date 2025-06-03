@@ -151,7 +151,7 @@ export default function MintSection() {
               value={quantity}
               onChange={(e) => {
                 const val = Number(e.target.value);
-                if (val >= 1 && val <= 3) {
+                if (val >= 1 && val <= 10) {
                   setQuantity(val);
                 } else if (e.target.value === "") {
                   setQuantity(1);
@@ -160,10 +160,10 @@ export default function MintSection() {
               onBlur={(e) => {
                 const val = Number(e.target.value);
                 if (val < 1) setQuantity(1);
-                if (val > 3) setQuantity(3);
+                if (val > 10) setQuantity(10);
               }}
               min={1}
-              max={3}
+              max={10}
               className="rounded-md border border-pastel-purple dark:border-slate-600 bg-content-bg dark:bg-dark-content-bg/50 px-3 py-1.5 text-center w-20 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors duration-150"
             />
           </div>
