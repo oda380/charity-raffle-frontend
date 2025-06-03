@@ -6,6 +6,9 @@ import { useAllowanceCheck } from "../hooks/useAllowanceCheck"; // Assuming this
 import CharityRaffleABI from "../abis/CharityRaffleABI.json"; // Assuming this path is correct
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { NFTPreviewCarousel } from "./NFTPreviewCarousel";
+import { useSignMessage } from "wagmi";
+import { verifyMessage } from "ethers"; // for verifyMessage
+
 
 const CONTRACT_ADDRESS = "0xed81C5F9e322D1005a28393c5D93499ee2ff4e55"; // Make sure this is the correct Base Mainnet address
 const MAX_SUPPLY = 300;
@@ -13,6 +16,7 @@ const MAX_SUPPLY = 300;
 export default function MintSection() {
   const { address, isConnected } = useAccount();
 
+  const { signMessageAsync } = useSignMessage();
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(false);
   const [txHash, setTxHash] = useState(null);
@@ -75,12 +79,16 @@ export default function MintSection() {
         }
       }
 
+      const nonce = Date.now().toString();
+      const message = `CharityRaffle Mint ${quantity} @ ${nonce}`;
+      const signature = await signMessageAsync({ message });
+
       const res = await fetch(
         "https://charity-raffle-relayer.onrender.com/mint",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userAddress: address, quantity }),
+          body: JSON.stringify({ userAddress: address, quantity, message, signature }),
         }
       );
 
