@@ -1,53 +1,48 @@
 // src/components/MintSection.jsx
 import { useState } from "react";
-import { useAccount, useContractRead, usePublicClient } from "wagmi";
-import { useApproveUSDC } from "../hooks/useApproveUSDC";
-import { useAllowanceCheck } from "../hooks/useAllowanceCheck";
+import { useAccount, useContractRead } from "wagmi";
 import { useUSDCBalance } from "../hooks/useUSDCBalance";
+import { usePermitMint } from "../hooks/usePermitMint";
 import CharityRaffleABI from "../abis/CharityRaffleABI.json";
-import USDC_ABI from "../abis/USDC_ABI.json";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { NFTPreviewCarousel } from "./NFTPreviewCarousel";
-import { useSignMessage } from "wagmi";
 import toast from "react-hot-toast";
 
-const CONTRACT_ADDRESS = "0x68a8b9579f846B123686Fb920B075DFC686c2aEB";
-const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+const CONTRACT_ADDRESS = "0x1b46f44eadc6486ea8daf1a7b00ea4025383f6fc";
 const MAX_SUPPLY = 300;
 
 export default function MintSection() {
   const { address, isConnected } = useAccount();
-  const publicClient = usePublicClient();
-  const { signMessageAsync } = useSignMessage();
-
   const [quantity, setQuantity] = useState(1);
-  const [loading, setLoading] = useState(false);
   const [txHash, setTxHash] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
+  const [minted, setMinted] = useState(false);
 
   const { data: mintPriceData, isLoading: isPriceLoading } = useContractRead({
     address: CONTRACT_ADDRESS,
     abi: CharityRaffleABI,
     functionName: "mintPrice",
+    query: {
+      refetchInterval: 60000,
+    },
   });
 
   const { data: totalMintedData } = useContractRead({
     address: CONTRACT_ADDRESS,
     abi: CharityRaffleABI,
     functionName: "totalMinted",
-    watch: true,
+    query: { refetchInterval: 30000 },
   });
 
   const numericMintPrice = mintPriceData ? Number(mintPriceData) : 0;
-  const minted = totalMintedData ? Number(totalMintedData) : 0;
-  const soldOut = minted >= MAX_SUPPLY;
+  const mintedCount = totalMintedData ? Number(totalMintedData) : 0;
+  const soldOut = mintedCount >= MAX_SUPPLY;
   const validNumericMintPrice = numericMintPrice > 0 ? numericMintPrice : 0;
 
-  const { approve, status: approveStatus } = useApproveUSDC(quantity, validNumericMintPrice);
-  const { hasEnoughAllowance, isLoading: isAllowanceLoading, refetch: refetchAllowance } =
-    useAllowanceCheck(address, quantity, validNumericMintPrice);
   const { balance: usdcBalance, isLoading: isUSDCLoading, refetch: usdcBalanceRefetch } =
     useUSDCBalance(address);
+
+  const { mintWithPermit, loading, error } = usePermitMint(quantity, validNumericMintPrice);
 
   const handleMint = async () => {
     if (!address || !isConnected) {
@@ -69,66 +64,21 @@ export default function MintSection() {
       return;
     }
 
-    setLoading(true);
     setErrorMessage(null);
     setTxHash(null);
 
     try {
-      const allowance = await publicClient.readContract({
-        address: USDC_ADDRESS,
-        abi: USDC_ABI,
-        functionName: "allowance",
-        args: [address, CONTRACT_ADDRESS],
-      });
-
-      if (allowance < required) {
-        await approve?.();
-        await new Promise((r) => setTimeout(r, 1500));
-
-        const newAllowance = await publicClient.readContract({
-          address: USDC_ADDRESS,
-          abi: USDC_ABI,
-          functionName: "allowance",
-          args: [address, CONTRACT_ADDRESS],
-        });
-
-        if (newAllowance < required) {
-          throw new Error("USDC approval confirmed but still insufficient.");
-        }
-      }
-
-      const nonce = Date.now().toString();
-      const message = `CharityRaffle Mint ${quantity} @ ${nonce}`;
-      const signature = await signMessageAsync({ message });
-
-      if (!nonce || !message || !signature) {
-        throw new Error("Missing signature payload");
-      }
-
-      const res = await fetch("https://charity-raffle-relayer.onrender.com/mint", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userAddress: address, quantity, message, signature, nonce }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Minting transaction failed.");
-      }
-
-      setTxHash(data.txHash);
-      toast.success("🎉 Mint successful! Check your NFT below.");
-      await refetchAllowance?.();
+      const hash = await mintWithPermit();
+      setTxHash(hash);
+      toast.success("🎉 Mint successful! Check your NFT below.", { position: "top-center" });
       await usdcBalanceRefetch?.();
       setQuantity(1);
+      setMinted(true);
     } catch (err) {
       console.error("Mint failed:", err);
-      setErrorMessage(err.message || "An unexpected error occurred during minting.");
-    } finally {
-      setLoading(false);
+      setErrorMessage(error || "An unexpected error occurred during minting.");
     }
   };
-
 
   return (
     <div className="space-y-6 text-center">
@@ -156,7 +106,7 @@ export default function MintSection() {
         <div className="space-y-5">
           {!isPriceLoading && validNumericMintPrice > 0 && (
             <p className="text-sm text-text-dark/80 dark:text-dark-text/80">
-              Each raffle ticket costs{" "}
+              Each raffle ticket costs {" "}
               <span className="font-semibold text-indigo-600 dark:text-indigo-400">
                 {(validNumericMintPrice / 1_000_000).toFixed(2)} USDC.
               </span>
@@ -192,7 +142,7 @@ export default function MintSection() {
 
           {!isPriceLoading && quantity >= 1 && (
             <p className="text-sm text-text-dark/80 dark:text-dark-text/80">
-              Total:{" "}
+              Total: {" "}
               <span className="font-semibold text-indigo-600 dark:text-indigo-400">
                 {(quantity * validNumericMintPrice / 1_000_000).toFixed(2)} USDC
               </span>
@@ -203,24 +153,21 @@ export default function MintSection() {
             onClick={handleMint}
             disabled={
               loading ||
-              approveStatus === "loading" ||
-              isAllowanceLoading ||
               isPriceLoading ||
               isUSDCLoading ||
               soldOut ||
-              quantity < 1 || quantity > 10
+              quantity < 1 ||
+              quantity > 10
             }
             className="w-full py-3 px-6 rounded-full font-semibold text-white transition-all duration-200 ease-in-out
                      bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75
                      dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-500
-                     disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-blue-500 dark:disabled:hover:bg-blue-600"
+                     disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {soldOut
               ? "Sold Out"
-              : loading || approveStatus === "loading" || isAllowanceLoading || isUSDCLoading
-              ? "Processing..."
-              : !hasEnoughAllowance
-              ? `Approve USDC & Mint ${quantity} Ticket${quantity > 1 ? "s" : ""}`
+              : loading
+              ? "Minting..."
               : `Mint ${quantity} Ticket${quantity > 1 ? "s" : ""}`}
           </button>
 
@@ -235,6 +182,12 @@ export default function MintSection() {
               >
                 View Transaction: {txHash.slice(0, 10)}...{txHash.slice(-8)}
               </a>
+            </div>
+          )}
+
+          {minted && (
+            <div className="bg-green-50 border border-green-300 text-green-700 dark:bg-green-900/20 dark:text-green-300 p-4 rounded-lg">
+              ✅ Thank you for minting! Your NFT has been sent to your wallet.
             </div>
           )}
 

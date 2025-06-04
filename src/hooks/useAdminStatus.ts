@@ -2,7 +2,7 @@ import { useAccount, useContractRead } from "wagmi";
 import { base } from "wagmi/chains";
 import CharityRaffleABI from "../abis/CharityRaffleABI.json";
 
-const CONTRACT_ADDRESS = "0x68a8b9579f846B123686Fb920B075DFC686c2aEB";
+const CONTRACT_ADDRESS = "0x1b46f44eadc6486ea8daf1a7b00ea4025383f6fc";
 
 export function useAdminStatus() {
   const { address, isConnected } = useAccount();
