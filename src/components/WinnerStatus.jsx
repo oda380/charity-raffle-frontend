@@ -5,7 +5,7 @@ import InfoCard from "./InfoCard";
 import CharityRaffleABI from "../abis/CharityRaffleABI.json";
 
 const RELAYER_BASE_URL = "https://charity-raffle-relayer.onrender.com";
-const CONTRACT_ADDRESS = "0xed81C5F9e322D1005a28393c5D93499ee2ff4e55";
+const CONTRACT_ADDRESS = "0x880cbc560a7a5e166D2fa882a1096E66f8F38BfE";
 
 export default function WinnerStatus() {
   const { address, isConnected } = useAccount();

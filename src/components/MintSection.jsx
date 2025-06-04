@@ -10,7 +10,7 @@ import { useSignMessage } from "wagmi";
 import { verifyMessage } from "ethers"; // for verifyMessage
 
 
-const CONTRACT_ADDRESS = "0xed81C5F9e322D1005a28393c5D93499ee2ff4e55"; // Make sure this is the correct Base Mainnet address
+const CONTRACT_ADDRESS = "0x880cbc560a7a5e166D2fa882a1096E66f8F38BfE"; // Make sure this is the correct Base Mainnet address
 const MAX_SUPPLY = 300;
 
 export default function MintSection() {

@@ -3,7 +3,7 @@ import { useAccount, useContractRead } from "wagmi";
 import USDC_ABI from "../abis/USDC_ABI.json"; // Assuming ABI is named USDC_ABI.json or similar
 import InfoCard from "./InfoCard"; // Assuming this path is correct
 
-const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"; // Base Mainnet USDC.e
+const USDC_ADDRESS = "0x880cbc560a7a5e166D2fa882a1096E66f8F38BfE"; // Base Mainnet USDC.e
 
 export default function TokenBalance() {
   const { address, isConnected } = useAccount();
