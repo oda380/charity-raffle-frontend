@@ -1,9 +1,10 @@
 import { useReadContract } from "wagmi";
 import { useEffect, useState } from "react";
 import USDC_ABI from "../abis/USDC_ABI.json";
+import { base } from "wagmi/chains";
 
 const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
-const CONTRACT_ADDRESS = "0x880cbc560a7a5e166D2fa882a1096E66f8F38BfE";
+const CONTRACT_ADDRESS = "0x68a8b9579f846B123686Fb920B075DFC686c2aEB";
 
 export function useAllowanceCheck(
   owner: string | undefined,
@@ -11,21 +12,37 @@ export function useAllowanceCheck(
   mintPrice: number
 ) {
   const [hasEnoughAllowance, setHasEnoughAllowance] = useState(false);
+  const shouldFetch = !!owner;
 
-  const { data, refetch } = useReadContract({
+  const {
+    data,
+    refetch: refetchAllowance,
+    isLoading,
+    isFetching,
+    isError,
+    error,
+  } = useReadContract({
     address: USDC_ADDRESS,
     abi: USDC_ABI,
     functionName: "allowance",
-    args: owner ? [owner, CONTRACT_ADDRESS] : undefined,
-    query: { enabled: !!owner },
+    args: shouldFetch ? [owner!, CONTRACT_ADDRESS] : undefined,
+    chainId: base.id,
+    query: { enabled: shouldFetch },
   });
 
   useEffect(() => {
-    if (data && typeof data === "bigint") {
+    if (typeof data === "bigint") {
       const required = BigInt(quantity) * BigInt(mintPrice);
       setHasEnoughAllowance(data >= required);
     }
   }, [data, quantity, mintPrice]);
 
-  return { hasEnoughAllowance, refetch };
+  return {
+    hasEnoughAllowance,
+    refetchAllowance, // renamed for clarity
+    isLoading,
+    isFetching,
+    isError,
+    error,
+  };
 }

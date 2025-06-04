@@ -1,22 +1,25 @@
 // src/components/MintSection.jsx
 import { useState } from "react";
-import { useAccount, useContractRead } from "wagmi";
-import { useApproveUSDC } from "../hooks/useApproveUSDC"; // Assuming this path is correct
-import { useAllowanceCheck } from "../hooks/useAllowanceCheck"; // Assuming this path is correct
-import CharityRaffleABI from "../abis/CharityRaffleABI.json"; // Assuming this path is correct
+import { useAccount, useContractRead, usePublicClient } from "wagmi";
+import { useApproveUSDC } from "../hooks/useApproveUSDC";
+import { useAllowanceCheck } from "../hooks/useAllowanceCheck";
+import { useUSDCBalance } from "../hooks/useUSDCBalance";
+import CharityRaffleABI from "../abis/CharityRaffleABI.json";
+import USDC_ABI from "../abis/USDC_ABI.json";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { NFTPreviewCarousel } from "./NFTPreviewCarousel";
 import { useSignMessage } from "wagmi";
-import { verifyMessage } from "ethers"; // for verifyMessage
+import toast from "react-hot-toast";
 
-
-const CONTRACT_ADDRESS = "0x880cbc560a7a5e166D2fa882a1096E66f8F38BfE"; // Make sure this is the correct Base Mainnet address
+const CONTRACT_ADDRESS = "0x68a8b9579f846B123686Fb920B075DFC686c2aEB";
+const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 const MAX_SUPPLY = 300;
 
 export default function MintSection() {
   const { address, isConnected } = useAccount();
-
+  const publicClient = usePublicClient();
   const { signMessageAsync } = useSignMessage();
+
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(false);
   const [txHash, setTxHash] = useState(null);
@@ -40,15 +43,11 @@ export default function MintSection() {
   const soldOut = minted >= MAX_SUPPLY;
   const validNumericMintPrice = numericMintPrice > 0 ? numericMintPrice : 0;
 
-  const { approve, status: approveStatus } = useApproveUSDC(
-    quantity,
-    validNumericMintPrice
-  );
-  const {
-    hasEnoughAllowance,
-    isLoading: isAllowanceLoading,
-    refetch: refetchAllowance,
-  } = useAllowanceCheck(address, quantity, validNumericMintPrice);
+  const { approve, status: approveStatus } = useApproveUSDC(quantity, validNumericMintPrice);
+  const { hasEnoughAllowance, isLoading: isAllowanceLoading, refetch: refetchAllowance } =
+    useAllowanceCheck(address, quantity, validNumericMintPrice);
+  const { balance: usdcBalance, isLoading: isUSDCLoading, refetch: usdcBalanceRefetch } =
+    useUSDCBalance(address);
 
   const handleMint = async () => {
     if (!address || !isConnected) {
@@ -64,18 +63,37 @@ export default function MintSection() {
       return;
     }
 
+    const required = BigInt(quantity) * BigInt(validNumericMintPrice);
+    if (!usdcBalance || usdcBalance < required) {
+      setErrorMessage("You don't have enough USDC to mint.");
+      return;
+    }
+
     setLoading(true);
     setErrorMessage(null);
     setTxHash(null);
 
     try {
-      const allowanceResult = await refetchAllowance?.();
-      const currentAllowance = allowanceResult?.data ?? hasEnoughAllowance;
+      const allowance = await publicClient.readContract({
+        address: USDC_ADDRESS,
+        abi: USDC_ABI,
+        functionName: "allowance",
+        args: [address, CONTRACT_ADDRESS],
+      });
 
-      if (!currentAllowance) {
-        const approveResult = await approve?.();
-        if (!approveResult) {
-          throw new Error("USDC approval failed or was rejected.");
+      if (allowance < required) {
+        await approve?.();
+        await new Promise((r) => setTimeout(r, 1500));
+
+        const newAllowance = await publicClient.readContract({
+          address: USDC_ADDRESS,
+          abi: USDC_ABI,
+          functionName: "allowance",
+          args: [address, CONTRACT_ADDRESS],
+        });
+
+        if (newAllowance < required) {
+          throw new Error("USDC approval confirmed but still insufficient.");
         }
       }
 
@@ -83,14 +101,15 @@ export default function MintSection() {
       const message = `CharityRaffle Mint ${quantity} @ ${nonce}`;
       const signature = await signMessageAsync({ message });
 
-      const res = await fetch(
-        "https://charity-raffle-relayer.onrender.com/mint",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userAddress: address, quantity, message, signature }),
-        }
-      );
+      if (!nonce || !message || !signature) {
+        throw new Error("Missing signature payload");
+      }
+
+      const res = await fetch("https://charity-raffle-relayer.onrender.com/mint", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userAddress: address, quantity, message, signature, nonce }),
+      });
 
       const data = await res.json();
       if (!res.ok) {
@@ -98,15 +117,18 @@ export default function MintSection() {
       }
 
       setTxHash(data.txHash);
+      toast.success("🎉 Mint successful! Check your NFT below.");
+      await refetchAllowance?.();
+      await usdcBalanceRefetch?.();
+      setQuantity(1);
     } catch (err) {
       console.error("Mint failed:", err);
-      setErrorMessage(
-        err.message || "An unexpected error occurred during minting."
-      );
+      setErrorMessage(err.message || "An unexpected error occurred during minting.");
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="space-y-6 text-center">
@@ -184,6 +206,7 @@ export default function MintSection() {
               approveStatus === "loading" ||
               isAllowanceLoading ||
               isPriceLoading ||
+              isUSDCLoading ||
               soldOut ||
               quantity < 1 || quantity > 10
             }
@@ -194,7 +217,7 @@ export default function MintSection() {
           >
             {soldOut
               ? "Sold Out"
-              : loading || approveStatus === "loading" || isAllowanceLoading
+              : loading || approveStatus === "loading" || isAllowanceLoading || isUSDCLoading
               ? "Processing..."
               : !hasEnoughAllowance
               ? `Approve USDC & Mint ${quantity} Ticket${quantity > 1 ? "s" : ""}`

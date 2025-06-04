@@ -9,7 +9,7 @@ import {
 import CharityRaffleABI from "../abis/CharityRaffleABI.json";
 
 // 1. Revert to hardcoded contract address
-const CONTRACT_ADDRESS = "0x880cbc560a7a5e166D2fa882a1096E66f8F38BfE"; // Make sure this is correct
+const CONTRACT_ADDRESS = "0x68a8b9579f846B123686Fb920B075DFC686c2aEB"; // Make sure this is correct
 const MAX_SUPPLY = 300;
 
 export default function AdminPanel() {

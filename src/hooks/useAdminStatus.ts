@@ -1,9 +1,8 @@
-// src/hooks/useAdminStatus.ts
 import { useAccount, useContractRead } from "wagmi";
-import CharityRaffleABI from "../abis/CharityRaffleABI.json"; // Adjust path if needed
+import { base } from "wagmi/chains";
+import CharityRaffleABI from "../abis/CharityRaffleABI.json";
 
-// 1. Use a hardcoded contract address
-const CONTRACT_ADDRESS = "0x880cbc560a7a5e166D2fa882a1096E66f8F38BfE"; // Make sure this is correct
+const CONTRACT_ADDRESS = "0x68a8b9579f846B123686Fb920B075DFC686c2aEB";
 
 export function useAdminStatus() {
   const { address, isConnected } = useAccount();
@@ -14,32 +13,25 @@ export function useAdminStatus() {
     isError: isOwnerError,
     error: ownerError,
   } = useContractRead({
-    address: CONTRACT_ADDRESS as `0x${string}`, // Type assertion is still good
+    address: CONTRACT_ADDRESS as `0x${string}`,
     abi: CharityRaffleABI,
     functionName: "owner",
-    // Corrected: `enabled` and other query options go inside the `query` object
     query: {
-      enabled: isConnected, // Only fetch if connected (CONTRACT_ADDRESS is always defined now)
+      enabled: isConnected, // ✅ CORRECT for Wagmi v2
     },
   });
 
   const isAdmin =
     isConnected &&
     !!address &&
-    !!owner && // owner will be undefined if isLoadingOwner or isOwnerError
+    !!owner &&
     address.toLowerCase() === String(owner).toLowerCase();
-
-  // 2. isContractConfigured is effectively always true now, so it can be removed
-  //    or kept as true if other parts of your app might use it for different configs.
-  //    For simplicity here, we'll assume it's not strictly needed for this hook's output anymore
-  //    if this hook is *only* for this specific hardcoded contract.
 
   return {
     isAdmin,
     isLoadingAdminStatus: isLoadingOwner,
     isAdminStatusError: isOwnerError,
     adminStatusErrorMessage: ownerError?.shortMessage || ownerError?.message || null,
-    // isContractConfigured: true, // You can return true if needed elsewhere
-    isConnected, // Expose isConnected for convenience in App.jsx
+    isConnected,
   };
 }
