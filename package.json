@@ -12,13 +12,15 @@
   "dependencies": {
     "@rainbow-me/rainbowkit": "^2.2.5",
     "@tanstack/react-query": "^5.79.2",
-    "@wagmi/connectors": "^5.8.3",
+    "@wagmi/connectors": "^5.8.4",
     "@wagmi/core": "^2.17.2",
+    "@walletconnect/ethereum-provider": "^2.21.1",
+    "@walletconnect/modal": "^2.7.0",
     "ethers": "^6.14.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "viem": "^2.30.6",
-    "wagmi": "^2.15.4"
+    "wagmi": "^2.15.5"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",
