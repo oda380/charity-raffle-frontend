@@ -55,8 +55,8 @@ export default function MintSection() {
       setErrorMessage("Please connect your wallet first.");
       return;
     }
-    if (quantity < 1 || quantity > 3) {
-      setErrorMessage("Quantity must be between 1 and 3.");
+    if (quantity < 1 || quantity > 10) {
+      setErrorMessage("Quantity must be between 1 and 10.");
       return;
     }
     if (soldOut) {
@@ -185,7 +185,7 @@ export default function MintSection() {
               isAllowanceLoading ||
               isPriceLoading ||
               soldOut ||
-              quantity < 1 || quantity > 3
+              quantity < 1 || quantity > 10
             }
             className="w-full py-3 px-6 rounded-full font-semibold text-white transition-all duration-200 ease-in-out
                      bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75
