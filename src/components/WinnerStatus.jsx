@@ -10,7 +10,7 @@ import "swiper/css/navigation";
 import "swiper/css/pagination";
 
 const RELAYER_BASE_URL = "https://charity-raffle-relayer.onrender.com";
-const CONTRACT_ADDRESS = "0x1b46f44eadc6486ea8daf1a7b00ea4025383f6fc";
+const CONTRACT_ADDRESS = "0xCBDF97E844afDbF26f5e21e139e045dE72077023";
 const BASE_CID = "bafybeihc6d6jdpbf6ai7yggjrfssto35wsdexzkdud4xqsasylufg34tle";
 const BASE_GATEWAY = "https://scarlet-worried-toad-640.mypinata.cloud/ipfs";
 

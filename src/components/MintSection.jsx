@@ -8,7 +8,7 @@ import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { NFTPreviewCarousel } from "./NFTPreviewCarousel";
 import toast from "react-hot-toast";
 
-const CONTRACT_ADDRESS = "0x1b46f44eadc6486ea8daf1a7b00ea4025383f6fc";
+const CONTRACT_ADDRESS = "0xCBDF97E844afDbF26f5e21e139e045dE72077023";
 const MAX_SUPPLY = 300;
 
 export default function MintSection() {

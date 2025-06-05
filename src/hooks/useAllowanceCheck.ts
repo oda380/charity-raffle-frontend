@@ -4,7 +4,7 @@ import USDC_ABI from "../abis/USDC_ABI.json";
 import { base } from "wagmi/chains";
 
 const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
-const CONTRACT_ADDRESS = "0x1b46f44eadc6486ea8daf1a7b00ea4025383f6fc";
+const CONTRACT_ADDRESS = "0xCBDF97E844afDbF26f5e21e139e045dE72077023";
 
 export function useAllowanceCheck(
   owner: string | undefined,
