@@ -1,4 +1,3 @@
-// src/hooks/usePermitMint.ts
 import { useState } from "react";
 import { useAccount, useWalletClient, usePublicClient } from "wagmi";
 import axios from "../lib/axiosInstance";
@@ -8,7 +7,7 @@ const USDC_NAME = "USD Coin";
 const USDC_VERSION = "2";
 
 export function usePermitMint(quantity: number, mintPrice: number) {
-  const { address } = useAccount();
+  const { address, isConnected } = useAccount();
   const { data: walletClient } = useWalletClient();
   const publicClient = usePublicClient();
 
@@ -16,17 +15,41 @@ export function usePermitMint(quantity: number, mintPrice: number) {
   const [error, setError] = useState<string | null>(null);
 
   const mintWithPermit = async (): Promise<string | null> => {
-    if (!walletClient || !publicClient || !address || quantity < 1 || quantity > 10) {
-      setError("Invalid mint input");
+    if (!isConnected || !address || quantity < 1 || quantity > 10) {
+      setError("Please connect your wallet and enter a valid quantity.");
       return null;
     }
+
+    if (!walletClient || !publicClient) {
+      setError("Wallet or network not available.");
+      return null;
+    }
+
+    const normalizedAddress = address.toLowerCase();
+
+    const spender = import.meta.env.VITE_RELAYER_ADDRESS as `0x${string}`;
+
+    // ✅ Runtime guard for undefined spender (env variable)
+    if (!spender) {
+      setError("Contract address is not set. Please check your .env file.");
+      console.error("❌ VITE_CONTRACT_ADDRESS is missing");
+      return null;
+    }
+
+    console.log("🧾 Permit mint setup:", {
+      address: normalizedAddress,
+      walletClientAccount: walletClient.account,
+      quantity,
+      mintPrice,
+      spender,
+    });
 
     setLoading(true);
     setError(null);
 
     try {
       const value = BigInt(quantity) * BigInt(mintPrice);
-      const deadline = BigInt(Math.floor(Date.now() / 1000) + 1800); // 30 min from now
+      const deadline = BigInt(Math.floor(Date.now() / 1000) + 1800); // 30 mins from now
 
       const nonce: bigint = await publicClient.readContract({
         address: USDC_ADDRESS,
@@ -40,7 +63,7 @@ export function usePermitMint(quantity: number, mintPrice: number) {
           },
         ],
         functionName: "nonces",
-        args: [address],
+        args: [normalizedAddress as `0x${string}`],
       });
 
       const domain = {
@@ -60,15 +83,13 @@ export function usePermitMint(quantity: number, mintPrice: number) {
         ],
       };
 
-      const spender = import.meta.env.VITE_CONTRACT_ADDRESS as `0x${string}`;
-
       const signature = await walletClient.signTypedData({
-        account: address, // 🔐 crucial
+        account: normalizedAddress as `0x${string}`,
         domain,
         types,
         primaryType: "Permit",
         message: {
-          owner: address,
+          owner: normalizedAddress,
           spender,
           value,
           nonce,
@@ -79,8 +100,8 @@ export function usePermitMint(quantity: number, mintPrice: number) {
       const { r, s, v } = splitSignature(signature);
 
       const { data } = await axios.post("/mint-with-permit", {
-        tokenOwner: address,
-        nftRecipient: address,
+        tokenOwner: normalizedAddress,
+        nftRecipient: normalizedAddress,
         quantity,
         value: value.toString(),
         permitDeadline: deadline.toString(),

@@ -20,6 +20,13 @@ export function useMint(quantity: number) {
       return;
     }
 
+    const relayerUrl = import.meta.env.VITE_RELAYER_URL;
+    if (!relayerUrl) {
+      setError("Relayer URL is not defined. Please check your .env file.");
+      console.error("❌ Missing VITE_RELAYER_URL in environment variables.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setTxHash(null);
@@ -27,7 +34,7 @@ export function useMint(quantity: number) {
     try {
       const signature = await signMessageAsync({ message });
 
-      const response = await axios.post(`${import.meta.env.VITE_RELAYER_URL}/mint`, {
+      const response = await axios.post(`${relayerUrl}/mint`, {
         userAddress: address,
         quantity,
         message,
@@ -40,6 +47,7 @@ export function useMint(quantity: number) {
       const msg =
         err?.response?.data?.error || err?.message || "Minting failed";
       setError(msg);
+      console.error("❌ Mint error:", err);
     } finally {
       setLoading(false);
     }
