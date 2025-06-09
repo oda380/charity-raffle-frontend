@@ -92,13 +92,22 @@ export default function AdminPanel() {
 
   const handleClick = () => {
     setUiError(null);
+
     if (count < 1 || count > MAX_SUPPLY) {
       setUiError(`Number of winners must be between 1 and ${MAX_SUPPLY}.`);
       return;
     }
+
     if (writeData?.hash || txSubmitError || txReceiptFetchError) {
-        resetWrite();
+      resetWrite();
     }
+
+    if (typeof write !== "function") {
+      setUiError("Select Winners is not available at the moment. Please try again.");
+      console.error("❌ AdminPanel: write() is not defined.");
+      return;
+    }
+
     write({ args: [BigInt(count)] });
   };
 
