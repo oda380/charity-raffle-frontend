@@ -107,30 +107,32 @@ export default function AdminPanel() {
 
   return (
     <div className="space-y-4 text-center">
-      <div className="flex items-center justify-center gap-3 py-1">
-        <label htmlFor="winner-count-input" className="text-sm font-medium text-text-dark dark:text-dark-text">
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-3 py-1">
+        <label className="text-sm font-medium text-text-dark dark:text-dark-text">
           Number of Winners:
         </label>
-        <input
-          id="winner-count-input"
-          type="number"
-          value={count}
-          onChange={(e) => {
-            const val = Number(e.target.value);
-            if (e.target.value === "") { setCount(1); }
-            else if (!isNaN(val)) { setCount(val); }
-          }}
-          onBlur={(e) => {
-            let val = Number(e.target.value);
-            if (isNaN(val) || val < 1) val = 1;
-            if (val > MAX_SUPPLY) val = MAX_SUPPLY;
-            setCount(val);
-          }}
-          min={1}
-          max={MAX_SUPPLY}
-          className="rounded-md border border-pastel-purple dark:border-slate-600 bg-content-bg dark:bg-dark-content-bg/50 px-3 py-1.5 text-center w-24
-                     focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors duration-150"
-        />
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setCount((c) => Math.max(1, c - 1))}
+            className="w-9 h-9 rounded-full bg-pastel-purple/20 hover:bg-pastel-purple/40 dark:bg-slate-700 dark:hover:bg-slate-600 text-xl font-semibold text-indigo-600 dark:text-indigo-300 transition"
+            aria-label="Decrease number of winners"
+          >
+            −
+          </button>
+
+          <span className="text-lg font-semibold w-10 text-center text-text-dark dark:text-dark-text">
+            {count}
+          </span>
+
+          <button
+            onClick={() => setCount((c) => Math.min(MAX_SUPPLY, c + 1))}
+            className="w-9 h-9 rounded-full bg-pastel-purple/20 hover:bg-pastel-purple/40 dark:bg-slate-700 dark:hover:bg-slate-600 text-xl font-semibold text-indigo-600 dark:text-indigo-300 transition"
+            aria-label="Increase number of winners"
+          >
+            +
+          </button>
+        </div>
       </div>
 
       <button

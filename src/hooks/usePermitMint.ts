@@ -63,6 +63,7 @@ export function usePermitMint(quantity: number, mintPrice: number) {
       const spender = import.meta.env.VITE_CONTRACT_ADDRESS as `0x${string}`;
 
       const signature = await walletClient.signTypedData({
+        account: address, // 🔐 crucial
         domain,
         types,
         primaryType: "Permit",

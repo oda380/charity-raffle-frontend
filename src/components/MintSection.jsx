@@ -90,10 +90,13 @@ export default function MintSection() {
             🎁 Yolo Summer Event Charity Raffle
           </h2>
           <p className="text-text-dark/90 dark:text-dark-text/90">
-            30% of total sales will be <strong>split equally</strong> between 3 randomly selected winners after the event.
+            70% of the proceeds will go to charity. We've decided to donate the profits to <strong>Tähetorni Children's Centre</strong>, so they can organize a special summer event for the kids.
           </p>
           <p className="text-text-dark/90 dark:text-dark-text/90">
-            The remaining 70% will be <strong>donated to charity</strong>.
+            This Centre offers a safe and nurturing space for middle-school aged children who lack that at home — often due to parents struggling with addiction, behavioral issues, or financial hardship.
+          </p>
+          <p className="text-text-dark/90 dark:text-dark-text/90">
+            After school, these children come to the Centre to enjoy a warm meal, get help with homework from staff teachers, play, and simply experience the stability and freedom many other kids find at home.
           </p>
           <p className="text-text-dark/90 dark:text-dark-text/90">
             Connect your wallet to mint your ticket and participate.
