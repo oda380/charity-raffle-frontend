@@ -6,6 +6,9 @@ const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" as `0x${string
 const USDC_NAME = "USD Coin";
 const USDC_VERSION = "2";
 
+// The address of your deployed CharityRaffle smart contract.
+const SPENDER_CONTRACT_ADDRESS = "0xCBDF97E844afDbF26f5e21e139e045dE72077023" as `0x${string}`;
+
 export function usePermitMint(quantity: number, mintPrice: number) {
   const { address, isConnected } = useAccount();
   const { data: walletClient } = useWalletClient();
@@ -27,12 +30,15 @@ export function usePermitMint(quantity: number, mintPrice: number) {
 
     const normalizedAddress = address.toLowerCase();
 
-    const spender = import.meta.env.VITE_RELAYER_ADDRESS as `0x${string}`;
+    // --- ‼️ THE DEFINITIVE FIX ‼️ ---
+    // The "spender" must be your CharityRaffle contract, not the relayer's wallet.
+    // We are hardcoding it here to ensure the correct address is always used.
+    const spender = SPENDER_CONTRACT_ADDRESS;
 
-    // ✅ Runtime guard for undefined spender (env variable)
+    // Runtime guard for the spender address
     if (!spender) {
-      setError("Contract address is not set. Please check your .env file.");
-      console.error("❌ VITE_CONTRACT_ADDRESS is missing");
+      setError("Spender contract address is not set.");
+      console.error("❌ SPENDER_CONTRACT_ADDRESS is missing");
       return null;
     }
 
@@ -41,7 +47,7 @@ export function usePermitMint(quantity: number, mintPrice: number) {
       walletClientAccount: walletClient.account,
       quantity,
       mintPrice,
-      spender,
+      spender, // This should now be your CharityRaffle contract address
     });
 
     setLoading(true);
@@ -82,19 +88,19 @@ export function usePermitMint(quantity: number, mintPrice: number) {
           { name: "deadline", type: "uint256" },
         ],
       };
-
+      
       const signature = await walletClient.signTypedData({
         domain,
-          types,
-          primaryType: "Permit",
-          message: {
-            owner: normalizedAddress,
-            spender,
-            value,
-            nonce,
-            deadline,
-          },
-        });
+        types,
+        primaryType: "Permit",
+        message: {
+          owner: normalizedAddress,
+          spender,
+          value,
+          nonce,
+          deadline,
+        },
+      });
 
       const { r, s, v } = splitSignature(signature);
 
@@ -125,8 +131,8 @@ export function usePermitMint(quantity: number, mintPrice: number) {
 
 function splitSignature(signature: string) {
   return {
-    r: `0x${signature.slice(2, 66)}`,
-    s: `0x${signature.slice(66, 130)}`,
+    r: `0x${signature.slice(2, 66)}` as `0x${string}`,
+    s: `0x${signature.slice(66, 130)}` as `0x${string}`,
     v: parseInt(signature.slice(130, 132), 16),
   };
 }
