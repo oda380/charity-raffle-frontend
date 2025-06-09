@@ -84,18 +84,17 @@ export function usePermitMint(quantity: number, mintPrice: number) {
       };
 
       const signature = await walletClient.signTypedData({
-        account: normalizedAddress as `0x${string}`,
         domain,
-        types,
-        primaryType: "Permit",
-        message: {
-          owner: normalizedAddress,
-          spender,
-          value,
-          nonce,
-          deadline,
-        },
-      });
+          types,
+          primaryType: "Permit",
+          message: {
+            owner: normalizedAddress,
+            spender,
+            value,
+            nonce,
+            deadline,
+          },
+        });
 
       const { r, s, v } = splitSignature(signature);
 
