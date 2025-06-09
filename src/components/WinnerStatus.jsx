@@ -191,12 +191,14 @@ export default function WinnerStatus() {
 
               return tokenId ? (
                 <SwiperSlide key={i}>
-                  <div
-                    className={`flex flex-col items-center text-center gap-2 transition-all ${
-                      isWinnerToken ? "ring-2 ring-yellow-400 shadow-[0_0_10px_2px_gold] rounded-xl" : ""
-                    }`}
-                  >
-                    {imageUrl && (
+                  <div className="flex flex-col items-center text-center gap-2 transition-all">
+                    <div
+                      className={`rounded-xl overflow-hidden ${
+                        isWinnerToken
+                          ? "shadow-[0_0_12px_rgba(255,215,0,0.8)]"
+                          : "shadow-sm dark:shadow-none"
+                      }`}
+                    >
                       <img
                         src={imageUrl}
                         alt={`Ticket #${tokenId}`}
@@ -206,7 +208,8 @@ export default function WinnerStatus() {
                             : "border-indigo-300 dark:border-indigo-700"
                         }`}
                       />
-                    )}
+                    </div>
+
                     <span
                       className={`text-sm ${
                         isWinnerToken
@@ -216,6 +219,7 @@ export default function WinnerStatus() {
                     >
                       Ticket #{tokenId}
                     </span>
+
                     {isWinnerToken && (
                       <span className="text-xs text-yellow-500 dark:text-yellow-300 font-semibold">
                         🎉 Winner!
