@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import {
   useAccount,
   useContractRead,
+  usePrepareContractWrite,
   useContractWrite,
   useWaitForTransactionReceipt,
 } from "wagmi";
@@ -16,9 +17,6 @@ export default function AdminPanel() {
   const [count, setCount] = useState(1);
   const [uiError, setUiError] = useState(null);
 
-  // --- HOOKS ---
-  // All wagmi hooks are defined first.
-
   const {
     data: owner,
     isError: isOwnerError,
@@ -31,13 +29,28 @@ export default function AdminPanel() {
     enabled: isConnected,
   });
 
+  const isAdmin =
+    !!address && !!owner && address.toLowerCase() === String(owner).toLowerCase();
+
+  const {
+    config,
+    error: prepareError,
+    isError: isPrepareError,
+  } = usePrepareContractWrite({
+    address: CONTRACT_ADDRESS,
+    abi: CharityRaffleABI,
+    functionName: "selectWinners",
+    args: [BigInt(count)],
+    enabled: isConnected && isAdmin && count >= 1 && count <= MAX_SUPPLY,
+  });
+
   const {
     data: writeData,
     write,
-    isPending: isWriteLoading, // Switched to isPending for wagmi v2+ convention
+    isPending: isWriteLoading,
     error: txSubmitError,
     reset: resetWrite,
-  } = useContractWrite();
+  } = useContractWrite(config);
 
   const {
     data: txReceipt,
@@ -49,23 +62,16 @@ export default function AdminPanel() {
     hash: writeData?.hash,
   });
 
-
-  // --- LOGIC AND DERIVED STATE ---
-  // Now we can safely use the variables from the hooks.
-
-  const isAdmin =
-    !!address && !!owner && address.toLowerCase() === String(owner).toLowerCase();
-
   const isLoadingInteraction = isWriteLoading || isTxReceiptLoading;
+
   const currentInteractionError =
     uiError ||
+    prepareError?.shortMessage ||
     txSubmitError?.shortMessage ||
     txSubmitError?.message ||
     txReceiptFetchError?.shortMessage ||
     txReceiptFetchError?.message ||
     null;
-
-  // --- EVENT HANDLERS ---
 
   const handleClick = () => {
     setUiError(null);
@@ -75,56 +81,32 @@ export default function AdminPanel() {
       return;
     }
 
-    // Ensure `write` is available before calling it
-    if (typeof write !== "function") {
-      console.error("❌ AdminPanel: 'write' function is not available.");
-      setUiError("The write function is not ready. Please try again.");
+    if (!write) {
+      setUiError("Select Winners is not ready. Please wait...");
       return;
     }
 
-    write({
-      address: CONTRACT_ADDRESS,
-      abi: CharityRaffleABI,
-      functionName: "selectWinners",
-      args: [BigInt(count)],
-    });
+    if (writeData?.hash || txSubmitError || txReceiptFetchError) {
+      resetWrite();
+    }
+
+    write();
   };
 
-  // --- EFFECTS ---
-
-  // Effect to reset the form upon successful transaction
   useEffect(() => {
     if (isTxReceiptSuccess) {
       setUiError(null);
     }
   }, [isTxReceiptSuccess]);
-  
-  // --- DEBUGGING LOGS (optional) ---
-  // Place logs here to safely inspect state on every render
-  console.log({
-    isAdmin,
-    isLoadingInteraction,
-    isWriteLoading,
-    isTxReceiptLoading,
-    writeFunction: write,
-    error: currentInteractionError
-  });
 
-
-  // --- RENDER LOGIC ---
-
-  if (!isConnected || isOwnerLoading) {
-    return null; // Don't render anything if not connected or still loading owner
-  }
-
+  if (!isConnected || isOwnerLoading) return null;
   if (!isAdmin) {
     if (isOwnerError) {
       console.error("AdminPanel: Error fetching contract owner:", ownerError);
     }
-    return null; // Don't render for non-admins
+    return null;
   }
 
-  // Handle case where admin status is unclear due to an error
   if (isOwnerError && isAdmin) {
     return (
       <div className="text-sm text-center text-red-700 bg-red-100 dark:text-red-300 dark:bg-red-800/40 border border-red-300 dark:border-red-600 p-3 rounded-lg">
@@ -172,7 +154,9 @@ export default function AdminPanel() {
                    disabled:opacity-60 disabled:cursor-not-allowed"
       >
         {isLoadingInteraction
-          ? isWriteLoading ? "Awaiting Signature..." : "Processing Tx..."
+          ? isWriteLoading
+            ? "Awaiting Signature..."
+            : "Processing Tx..."
           : "Select Winners"}
       </button>
 
