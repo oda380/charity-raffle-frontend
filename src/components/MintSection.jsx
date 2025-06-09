@@ -90,7 +90,15 @@ export default function MintSection() {
             🎁 Yolo Summer Event Charity Raffle
           </h2>
           <p className="text-text-dark/90 dark:text-dark-text/90">
-            70% of the proceeds will go to charity. We've decided to donate the profits to <strong>Tähetorni Children's Centre</strong>, so they can organize a special summer event for the kids.
+            70% of the proceeds will go to charity. We've decided to donate the profits to{" "}
+            <a
+              href="https://lastekeskus.ee/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-blue-600 dark:text-blue-400 underline hover:text-blue-700 dark:hover:text-blue-300"
+            >
+              Tähetorni Children's Centre
+            </a>, so they can organize a special summer event for the kids.
           </p>
           <p className="text-text-dark/90 dark:text-dark-text/90">
             This Centre offers a safe and nurturing space for middle-school aged children who lack that at home — often due to parents struggling with addiction, behavioral issues, or financial hardship.
