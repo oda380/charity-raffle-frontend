@@ -38,11 +38,15 @@ export default function AdminPanel() {
     isLoading: isWriteLoading,
     error: txSubmitError,
     reset: resetWrite,
-  } = useContractWrite({
-    address: CONTRACT_ADDRESS,
-    abi: CharityRaffleABI,
-    functionName: "selectWinners",
-  });
+  } = useContractWrite(
+    isConnected
+      ? {
+          address: CONTRACT_ADDRESS,
+          abi: CharityRaffleABI,
+          functionName: "selectWinners",
+        }
+      : undefined
+  );
 
   const {
     data: txReceipt,
