@@ -1,15 +1,14 @@
 // src/components/AdminPanel.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   useAccount,
   useContractRead,
   useContractWrite,
-  useWaitForTransactionReceipt
+  useWaitForTransactionReceipt,
 } from "wagmi";
 import CharityRaffleABI from "../abis/CharityRaffleABI.json";
 
-// 1. Revert to hardcoded contract address
-const CONTRACT_ADDRESS = "0xCBDF97E844afDbF26f5e21e139e045dE72077023"; // Make sure this is correct
+const CONTRACT_ADDRESS = "0xCBDF97E844afDbF26f5e21e139e045dE72077023";
 const MAX_SUPPLY = 300;
 
 export default function AdminPanel() {
@@ -17,10 +16,8 @@ export default function AdminPanel() {
   const [count, setCount] = useState(1);
   const [uiError, setUiError] = useState(null);
 
-  console.log("Wagmi Loading States:", { isWriteLoading, isTxReceiptLoading });
-
-  // 2. Remove check for CONTRACT_ADDRESS being undefined from env, as it's now hardcoded.
-  // if (!CONTRACT_ADDRESS) { ... } // This check is no longer needed
+  // --- HOOKS ---
+  // All wagmi hooks are defined first.
 
   const {
     data: owner,
@@ -28,7 +25,7 @@ export default function AdminPanel() {
     error: ownerError,
     isLoading: isOwnerLoading,
   } = useContractRead({
-    address: CONTRACT_ADDRESS, // Still good to keep type assertion
+    address: CONTRACT_ADDRESS,
     abi: CharityRaffleABI,
     functionName: "owner",
     enabled: isConnected,
@@ -37,17 +34,11 @@ export default function AdminPanel() {
   const {
     data: writeData,
     write,
-    isLoading: isWriteLoading,
+    isPending: isWriteLoading, // Switched to isPending for wagmi v2+ convention
     error: txSubmitError,
     reset: resetWrite,
-  } = useContractWrite({
-    address: CONTRACT_ADDRESS,
-    abi: CharityRaffleABI,
-    functionName: "selectWinners",
-  });
+  } = useContractWrite();
 
-  console.log("Contract Write Info:", { writeFunction: write, preparationError: txSubmitError });
-  
   const {
     data: txReceipt,
     isError: isTxReceiptError,
@@ -56,43 +47,25 @@ export default function AdminPanel() {
     error: txReceiptFetchError,
   } = useWaitForTransactionReceipt({
     hash: writeData?.hash,
-    enabled: !!writeData?.hash,
-    onSuccess: () => {
-      setUiError(null);
-    },
-    onError: () => { /* txReceiptFetchError will be populated */ }
   });
+
+
+  // --- LOGIC AND DERIVED STATE ---
+  // Now we can safely use the variables from the hooks.
 
   const isAdmin =
     !!address && !!owner && address.toLowerCase() === String(owner).toLowerCase();
 
-  if (!isConnected) {
-    return null;
-  }
+  const isLoadingInteraction = isWriteLoading || isTxReceiptLoading;
+  const currentInteractionError =
+    uiError ||
+    txSubmitError?.shortMessage ||
+    txSubmitError?.message ||
+    txReceiptFetchError?.shortMessage ||
+    txReceiptFetchError?.message ||
+    null;
 
-  if (isOwnerLoading) {
-    return null;
-  }
-
-  if (!isAdmin) {
-    // Log error only if there was an owner fetch error, but still return null for non-admins
-    if (isOwnerError) {
-        console.error("AdminPanel: Error fetching contract owner:", ownerError);
-    }
-    return null;
-  }
-
-  // If isOwnerError is true AND isAdmin is somehow true (e.g. stale data),
-  // an admin might want to see an error. But typically if owner fetch fails, isAdmin will be false.
-  // This specific error display is for an admin who *is* verified but encounters an issue later.
-  if (isOwnerError && isAdmin) {
-     return (
-      <div className="text-sm text-center text-red-700 bg-red-100 dark:text-red-300 dark:bg-red-800/40 border border-red-300 dark:border-red-600 p-3 rounded-lg">
-        ❌ Could not verify admin status properly: {ownerError?.shortMessage || ownerError?.message || "Unknown error"}
-      </div>
-    );
-  }
-
+  // --- EVENT HANDLERS ---
 
   const handleClick = () => {
     setUiError(null);
@@ -102,21 +75,64 @@ export default function AdminPanel() {
       return;
     }
 
-    if (writeData?.hash || txSubmitError || txReceiptFetchError) {
-      resetWrite();
-    }
-
+    // Ensure `write` is available before calling it
     if (typeof write !== "function") {
-      setUiError("Select Winners is not available at the moment. Please try again.");
-      console.error("❌ AdminPanel: write() is not defined.");
+      console.error("❌ AdminPanel: 'write' function is not available.");
+      setUiError("The write function is not ready. Please try again.");
       return;
     }
 
-    write({ args: [BigInt(count)] });
+    write({
+      address: CONTRACT_ADDRESS,
+      abi: CharityRaffleABI,
+      functionName: "selectWinners",
+      args: [BigInt(count)],
+    });
   };
 
-  const isLoadingInteraction = isWriteLoading || isTxReceiptLoading;
-  const currentInteractionError = uiError || txSubmitError?.shortMessage || txSubmitError?.message || txReceiptFetchError?.shortMessage || txReceiptFetchError?.message || null;
+  // --- EFFECTS ---
+
+  // Effect to reset the form upon successful transaction
+  useEffect(() => {
+    if (isTxReceiptSuccess) {
+      setUiError(null);
+    }
+  }, [isTxReceiptSuccess]);
+  
+  // --- DEBUGGING LOGS (optional) ---
+  // Place logs here to safely inspect state on every render
+  console.log({
+    isAdmin,
+    isLoadingInteraction,
+    isWriteLoading,
+    isTxReceiptLoading,
+    writeFunction: write,
+    error: currentInteractionError
+  });
+
+
+  // --- RENDER LOGIC ---
+
+  if (!isConnected || isOwnerLoading) {
+    return null; // Don't render anything if not connected or still loading owner
+  }
+
+  if (!isAdmin) {
+    if (isOwnerError) {
+      console.error("AdminPanel: Error fetching contract owner:", ownerError);
+    }
+    return null; // Don't render for non-admins
+  }
+
+  // Handle case where admin status is unclear due to an error
+  if (isOwnerError && isAdmin) {
+    return (
+      <div className="text-sm text-center text-red-700 bg-red-100 dark:text-red-300 dark:bg-red-800/40 border border-red-300 dark:border-red-600 p-3 rounded-lg">
+        ❌ Could not verify admin status properly:{" "}
+        {ownerError?.shortMessage || ownerError?.message || "Unknown error"}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 text-center">
@@ -124,24 +140,23 @@ export default function AdminPanel() {
         <label className="text-sm font-medium text-text-dark dark:text-dark-text">
           Number of Winners:
         </label>
-
         <div className="flex items-center gap-3">
           <button
             onClick={() => setCount((c) => Math.max(1, c - 1))}
             className="w-9 h-9 rounded-full bg-pastel-purple/20 hover:bg-pastel-purple/40 dark:bg-slate-700 dark:hover:bg-slate-600 text-xl font-semibold text-indigo-600 dark:text-indigo-300 transition"
             aria-label="Decrease number of winners"
+            disabled={isLoadingInteraction}
           >
             −
           </button>
-
           <span className="text-lg font-semibold w-10 text-center text-text-dark dark:text-dark-text">
             {count}
           </span>
-
           <button
             onClick={() => setCount((c) => Math.min(MAX_SUPPLY, c + 1))}
             className="w-9 h-9 rounded-full bg-pastel-purple/20 hover:bg-pastel-purple/40 dark:bg-slate-700 dark:hover:bg-slate-600 text-xl font-semibold text-indigo-600 dark:text-indigo-300 transition"
             aria-label="Increase number of winners"
+            disabled={isLoadingInteraction}
           >
             +
           </button>
@@ -152,28 +167,27 @@ export default function AdminPanel() {
         onClick={handleClick}
         disabled={isLoadingInteraction || !write}
         className="w-full py-2.5 px-6 rounded-full font-semibold text-white transition-all duration-200 ease-in-out
-                  bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75
-                  dark:bg-indigo-700 dark:hover:bg-indigo-800 dark:focus:ring-indigo-600
-                  disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-indigo-600 dark:disabled:hover:bg-indigo-700"
+                   bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75
+                   dark:bg-indigo-700 dark:hover:bg-indigo-800 dark:focus:ring-indigo-600
+                   disabled:opacity-60 disabled:cursor-not-allowed"
       >
         {isLoadingInteraction
-          ? isWriteLoading ? "Submitting..." : "Processing Tx..."
+          ? isWriteLoading ? "Awaiting Signature..." : "Processing Tx..."
           : "Select Winners"}
       </button>
 
       {isTxReceiptSuccess && writeData?.hash && (
         <div className="text-sm text-green-600 dark:text-green-400 pt-2">
-          ✅ Winners selected successfully! (Status: {txReceipt?.status})<br />
-          {writeData?.hash && (
-            <a
-              href={`https://basescan.org/tx/${writeData.hash}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline hover:text-green-500 dark:hover:text-green-300 break-all"
-            >
-              View Transaction: {String(writeData.hash).slice(0, 10)}...{String(writeData.hash).slice(-8)}
-            </a>
-          )}
+          ✅ Winners selected successfully!
+          <br />
+          <a
+            href={`https://basescan.org/tx/${writeData.hash}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-green-500 dark:hover:text-green-300 break-all"
+          >
+            View Transaction: {String(writeData.hash).slice(0, 10)}...{String(writeData.hash).slice(-8)}
+          </a>
         </div>
       )}
 
