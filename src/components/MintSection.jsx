@@ -113,31 +113,25 @@ export default function MintSection() {
             </p>
           )}
 
-          <div className="flex items-center justify-center gap-3 py-1">
-            <label htmlFor="quantity-input" className="text-sm font-medium text-text-dark dark:text-dark-text">
-              Quantity:
-            </label>
-            <input
-              id="quantity-input"
-              type="number"
-              value={quantity}
-              onChange={(e) => {
-                const val = Number(e.target.value);
-                if (val >= 1 && val <= 10) {
-                  setQuantity(val);
-                } else if (e.target.value === "") {
-                  setQuantity(1);
-                }
-              }}
-              onBlur={(e) => {
-                const val = Number(e.target.value);
-                if (val < 1) setQuantity(1);
-                if (val > 10) setQuantity(10);
-              }}
-              min={1}
-              max={10}
-              className="rounded-md border border-pastel-purple dark:border-slate-600 bg-content-bg dark:bg-dark-content-bg/50 px-3 py-1.5 text-center w-20 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors duration-150"
-            />
+          <div className="flex flex-col items-center gap-2">
+            <span className="text-sm text-gray-700 dark:text-gray-300">Quantity:</span>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-lg font-bold"
+                disabled={quantity <= 1}
+              >
+                −
+              </button>
+              <span className="text-lg font-semibold w-6 text-center">{quantity}</span>
+              <button
+                onClick={() => setQuantity((q) => Math.min(3, q + 1))}
+                className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-lg font-bold"
+                disabled={quantity >= 3}
+              >
+                +
+              </button>
+            </div>
           </div>
 
           {!isPriceLoading && quantity >= 1 && (
