@@ -20,20 +20,21 @@ if (!walletConnectProjectId) {
 
 const config = getDefaultConfig({
   appName: 'Charity Raffle',
-  projectId: walletConnectProjectId || "missing_project_id", // fallback for testing
+  projectId: walletConnectProjectId || "missing_project_id",
   chains: [base],
   transports: {
-    [base.id]: http(baseMainnetRpcUrl || undefined),
+    // ✅ This is the robust way to handle the custom RPC
+    [base.id]: baseMainnetRpcUrl ? http(baseMainnetRpcUrl) : http(),
   },
 });
 
 const queryClient = new QueryClient();
 
 ReactDOM.createRoot(document.getElementById('root')).render(
-  
+  <React.StrictMode> {/* It's good practice to add StrictMode */}
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider 
+        <RainbowKitProvider
           theme={{
             lightMode: lightTheme(),
             darkMode: darkTheme({
@@ -47,5 +48,5 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>
-
+  </React.StrictMode>
 );
