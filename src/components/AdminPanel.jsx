@@ -17,6 +17,8 @@ export default function AdminPanel() {
   const [count, setCount] = useState(1);
   const [uiError, setUiError] = useState(null);
 
+  console.log("Wagmi Loading States:", { isWriteLoading, isTxReceiptLoading });
+
   // 2. Remove check for CONTRACT_ADDRESS being undefined from env, as it's now hardcoded.
   // if (!CONTRACT_ADDRESS) { ... } // This check is no longer needed
 
@@ -44,6 +46,8 @@ export default function AdminPanel() {
     functionName: "selectWinners",
   });
 
+  console.log("Contract Write Info:", { writeFunction: write, preparationError: txSubmitError });
+  
   const {
     data: txReceipt,
     isError: isTxReceiptError,
