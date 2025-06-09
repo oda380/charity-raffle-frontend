@@ -144,16 +144,18 @@ export default function AdminPanel() {
         </div>
       </div>
 
-    <button
-            onClick={handleClick}
-            // ✅ Add "!write" to the disabled check for extra safety
-            disabled={isLoadingInteraction || !write} 
-            className="w-full py-2.5 px-6 ..."
-          >
-            {isLoadingInteraction
-              ? isWriteLoading ? "Submitting..." : "Processing Tx..."
-              : "Select Winners"}
-          </button>
+      <button
+        onClick={handleClick}
+        disabled={isLoadingInteraction || !write}
+        className="w-full py-2.5 px-6 rounded-full font-semibold text-white transition-all duration-200 ease-in-out
+                  bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75
+                  dark:bg-indigo-700 dark:hover:bg-indigo-800 dark:focus:ring-indigo-600
+                  disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-indigo-600 dark:disabled:hover:bg-indigo-700"
+      >
+        {isLoadingInteraction
+          ? isWriteLoading ? "Submitting..." : "Processing Tx..."
+          : "Select Winners"}
+      </button>
 
       {isTxReceiptSuccess && writeData?.hash && (
         <div className="text-sm text-green-600 dark:text-green-400 pt-2">
