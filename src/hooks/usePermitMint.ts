@@ -7,7 +7,7 @@ const USDC_NAME = "USD Coin";
 const USDC_VERSION = "2";
 
 // The address of your deployed CharityRaffle smart contract.
-const SPENDER_CONTRACT_ADDRESS = "0xCBDF97E844afDbF26f5e21e139e045dE72077023" as `0x${string}`;
+const SPENDER_CONTRACT_ADDRESS = "0x1048d4F6CfEcD09aDB8A57BaE6059260a66780Ac" as `0x${string}`;
 
 export function usePermitMint(quantity: number, mintPrice: number) {
   const { address, isConnected } = useAccount();

@@ -5,7 +5,7 @@ import USDC_ABI from "../abis/USDC_ABI.json";
 import { base } from "wagmi/chains";
 
 const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
-const CONTRACT_ADDRESS = "0xCBDF97E844afDbF26f5e21e139e045dE72077023"; // Update to your actual deployed contract
+const CONTRACT_ADDRESS = "0x1048d4F6CfEcD09aDB8A57BaE6059260a66780Ac"; // Update to your actual deployed contract
 
 export function useApproveUSDC(quantity: number, mintPrice: number) {
   const { writeContractAsync } = useWriteContract();

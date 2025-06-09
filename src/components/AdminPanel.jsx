@@ -8,7 +8,7 @@ import {
 } from "wagmi";
 import CharityRaffleABI from "../abis/CharityRaffleABI.json";
 
-const CONTRACT_ADDRESS = "0xCBDF97E844afDbF26f5e21e139e045dE72077023";
+const CONTRACT_ADDRESS = "0x1048d4F6CfEcD09aDB8A57BaE6059260a66780Ac";
 const MAX_SUPPLY = 300;
 
 export default function AdminPanel() {

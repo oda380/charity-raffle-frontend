@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useReadContracts } from "wagmi";
 import CharityRaffleABI from "../abis/CharityRaffleABI.json"; // Assuming this path is correct
 
-const RAFFLE_CONTRACT_ADDRESS = "0xCBDF97E844afDbF26f5e21e139e045dE72077023"; // Make sure this is correct
+const RAFFLE_CONTRACT_ADDRESS = "0x1048d4F6CfEcD09aDB8A57BaE6059260a66780Ac"; // Make sure this is correct
 // Ensure your relayer URL is correct
 const RELAYER_WINNERS_URL = "https://charity-raffle-relayer.onrender.com/winners";
 
