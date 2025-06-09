@@ -3,8 +3,7 @@ import { useState, useEffect } from "react";
 import {
   useAccount,
   useContractRead,
-  usePrepareContractWrite,
-  useContractWrite,
+  useWriteContract,
   useWaitForTransactionReceipt,
 } from "wagmi";
 import CharityRaffleABI from "../abis/CharityRaffleABI.json";
@@ -19,9 +18,9 @@ export default function AdminPanel() {
 
   const {
     data: owner,
+    isLoading: isOwnerLoading,
     isError: isOwnerError,
     error: ownerError,
-    isLoading: isOwnerLoading,
   } = useContractRead({
     address: CONTRACT_ADDRESS,
     abi: CharityRaffleABI,
@@ -29,44 +28,29 @@ export default function AdminPanel() {
     enabled: isConnected,
   });
 
-  const isAdmin =
-    !!address && !!owner && address.toLowerCase() === String(owner).toLowerCase();
-
   const {
-    config,
-    error: prepareError,
-    isError: isPrepareError,
-  } = usePrepareContractWrite({
-    address: CONTRACT_ADDRESS,
-    abi: CharityRaffleABI,
-    functionName: "selectWinners",
-    args: [BigInt(count)],
-    enabled: isConnected && isAdmin && count >= 1 && count <= MAX_SUPPLY,
-  });
-
-  const {
-    data: writeData,
-    write,
+    data: writeHash,
+    writeContract,
     isPending: isWriteLoading,
     error: txSubmitError,
-    reset: resetWrite,
-  } = useContractWrite(config);
+  } = useWriteContract();
 
   const {
     data: txReceipt,
-    isError: isTxReceiptError,
     isLoading: isTxReceiptLoading,
     isSuccess: isTxReceiptSuccess,
+    isError: isTxReceiptError,
     error: txReceiptFetchError,
   } = useWaitForTransactionReceipt({
-    hash: writeData?.hash,
+    hash: writeHash,
   });
 
+  const isAdmin =
+    !!address && !!owner && address.toLowerCase() === String(owner).toLowerCase();
   const isLoadingInteraction = isWriteLoading || isTxReceiptLoading;
 
   const currentInteractionError =
     uiError ||
-    prepareError?.shortMessage ||
     txSubmitError?.shortMessage ||
     txSubmitError?.message ||
     txReceiptFetchError?.shortMessage ||
@@ -81,16 +65,18 @@ export default function AdminPanel() {
       return;
     }
 
-    if (!write) {
-      setUiError("Select Winners is not ready. Please wait...");
+    if (!writeContract) {
+      console.error("❌ writeContract is not available.");
+      setUiError("Select Winners is not available. Please try again.");
       return;
     }
 
-    if (writeData?.hash || txSubmitError || txReceiptFetchError) {
-      resetWrite();
-    }
-
-    write();
+    writeContract({
+      address: CONTRACT_ADDRESS,
+      abi: CharityRaffleABI,
+      functionName: "selectWinners",
+      args: [BigInt(count)],
+    });
   };
 
   useEffect(() => {
@@ -105,15 +91,6 @@ export default function AdminPanel() {
       console.error("AdminPanel: Error fetching contract owner:", ownerError);
     }
     return null;
-  }
-
-  if (isOwnerError && isAdmin) {
-    return (
-      <div className="text-sm text-center text-red-700 bg-red-100 dark:text-red-300 dark:bg-red-800/40 border border-red-300 dark:border-red-600 p-3 rounded-lg">
-        ❌ Could not verify admin status properly:{" "}
-        {ownerError?.shortMessage || ownerError?.message || "Unknown error"}
-      </div>
-    );
   }
 
   return (
@@ -147,7 +124,7 @@ export default function AdminPanel() {
 
       <button
         onClick={handleClick}
-        disabled={isLoadingInteraction || !write}
+        disabled={isLoadingInteraction || !writeContract}
         className="w-full py-2.5 px-6 rounded-full font-semibold text-white transition-all duration-200 ease-in-out
                    bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75
                    dark:bg-indigo-700 dark:hover:bg-indigo-800 dark:focus:ring-indigo-600
@@ -160,17 +137,17 @@ export default function AdminPanel() {
           : "Select Winners"}
       </button>
 
-      {isTxReceiptSuccess && writeData?.hash && (
+      {isTxReceiptSuccess && writeHash && (
         <div className="text-sm text-green-600 dark:text-green-400 pt-2">
           ✅ Winners selected successfully!
           <br />
           <a
-            href={`https://basescan.org/tx/${writeData.hash}`}
+            href={`https://basescan.org/tx/${writeHash}`}
             target="_blank"
             rel="noopener noreferrer"
             className="underline hover:text-green-500 dark:hover:text-green-300 break-all"
           >
-            View Transaction: {String(writeData.hash).slice(0, 10)}...{String(writeData.hash).slice(-8)}
+            View Transaction: {writeHash.slice(0, 10)}...{writeHash.slice(-8)}
           </a>
         </div>
       )}
